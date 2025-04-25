@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Forecast</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            color: #333;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            position: relative;
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            transition: background 1s ease;
+
+            /* Centering the body content */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh; /* Full viewport height */
+        }
+
+        .weather-container {
+            max-width: 800px;
+            width: 100%; /* Make sure it’s responsive */
+            margin: 0; /* Remove any automatic margin */
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 2;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            color: #4caf50;
+        }
+
+        .search-bar input {
+            padding: 10px;
+            font-size: 1rem;
+            width: 200px;
+            margin-right: 10px;
+        }
+
+        /* Glow-on-hover Button for Get Weather */
+        .btn-get-weather {
+            width: 220px;
+            height: 50px;
+            border: none;
+            outline: none;
+            color: #fff;
+            background: #4caf50;
+            cursor: pointer;
+            position: relative;
+            z-index: 0;
+            border-radius: 10px;
+        }
+
+        .btn-get-weather:before {
+            content: '';
+            background: linear-gradient(45deg, #ff0000, #ff7300, #000000, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+            position: absolute;
+            top: -2px;
+            left:-2px;
+            background-size: 400%;
+            z-index: -1;
+            filter: blur(5px);
+            width: calc(100% + 4px);
+            height: calc(100% + 4px);
+            animation: glowing 20s linear infinite;
+            opacity: 0;
+            transition: opacity .3s ease-in-out;
+            border-radius: 10px;
+        }
+
+        .btn-get-weather:active {
+            color: #4caf50
+        }
+
+        .btn-get-weather:active:after {
+            background: transparent;
+        }
+
+        .btn-get-weather:hover:before {
+            opacity: 1;
+        }
+
+        .btn-get-weather:after {
+            z-index: -1;
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: #4caf50;
+            left: 0;
+            top: 0;
+            border-radius: 10px;
+        }
+
+        @keyframes glowing {
+            0% { background-position: 0 0; }
+            50% { background-position: 400% 0; }
+            100% { background-position: 0 0; }
+        }
+        .btn-clear {
+            background-color: transparent;
+            color: #4caf50;
+            border: 2px solid #4caf50;
+            position: relative;
+            padding: 10px 15px;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: color 0.3s ease;
+        }
+
+        .btn-clear::after {
+            content: "";
+            position: absolute;
+            width: 0;
+            height: 100%;
+            top: 0;
+            left: 0;
+            background-color: #4caf50;
+            transition: width 0.3s ease;
+            z-index: -1;
+        }
+
+        .btn-clear:hover::after {
+            width: 100%;
+        }
+
+        .btn-clear:hover {
+            color: white;
+        }
+
+        #weather-info {
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        #loading {
+            display: none;
+            font-size: 1.2rem;
+            color: #4caf50;
+        }
+
+        footer p {
+            margin-top: 20px;
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .error-message {
+            color: red;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="weather-container">
+        <header>
+            <h1>Weather Forecast</h1>
+        </header>
+        <section class="search-bar">
+            <input type="text" id="city" placeholder="Enter city name...">
+            <button class="btn-get-weather" onclick="getWeather()">Get Weather</button>
+            <button class="btn-clear" onclick="clearInput()">Clear</button>
+        </section>
+        <section id="loading">Loading...</section>
+        <section id="weather-info">
+        </section>
+        <footer>
+            <p>Weather data provided by Silent</p>
+        </footer>
+    </div>
+
+    <script>
+        const API_KEY = 'YOUR OPEN WEATER API KEY';
+        const UNSPLASH_API_KEY = 'YOUR UNSPLASH API KEY';
+
+        function getWeather() {
+            const city = document.getElementById('city').value;
+            const weatherInfo = document.getElementById('weather-info');
+            const loadingIndicator = document.getElementById('loading');
+            
+            if (!city) {
+                alert("Please enter a city name!");
+                return;
+            }
+
+            loadingIndicator.style.display = 'block';
+            weatherInfo.innerHTML = '';
+
+            const xhr = new XMLHttpRequest();  // Create a new XMLHttpRequest object
+
+            // Set up the request (GET method, URL, and async=true)
+            xhr.open('GET', `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric`, true);
+
+            // Set up what to do when the request completes (successful or not)
+            xhr.onload = function() {
+                loadingIndicator.style.display = 'none';
+
+                if (xhr.status === 200) {  // If the request is successful
+                    const data = JSON.parse(xhr.responseText);  // Parse the JSON data
+
+                    if (data.cod === '404') {
+                        weatherInfo.innerHTML = `<p class="error-message">City not found!</p>`;
+                    } else {
+                        displayWeather(data);
+                        updateBackground(city);
+                    }
+                } else {
+                    weatherInfo.innerHTML = `<p class="error-message">Error fetching data. Please try again later.</p>`;
+                }
+            };
+
+            xhr.onerror = function() {
+                loadingIndicator.style.display = 'none';
+                weatherInfo.innerHTML = `<p class="error-message">An error occurred. Please try again later.</p>`;
+            };
+
+            xhr.send();  // Send the request
+        }
+
+        function clearInput() {
+            document.getElementById('city').value = '';
+            document.getElementById('weather-info').innerHTML = '';
+        }
+
+        function getCityImage(city) {
+            return fetch(`https://api.unsplash.com/photos/random?query=${city}&client_id=${UNSPLASH_API_KEY}`)
+                .then(response => response.json())
+                .then(data => {
+                    return data.urls?.regular || getFallbackImage();
+                })
+                .catch(() => getFallbackImage());
+        }
+
+        function getFallbackImage() {
+            return fetch(`https://api.unsplash.com/photos/random?query=landscape&client_id=${UNSPLASH_API_KEY}`)
+                .then(response => response.json())
+                .then(data => data.urls?.regular || '');
+        }
+
+        function updateBackground(city) {
+            getCityImage(city)
+                .then(imageUrl => {
+                    if (imageUrl) {
+                        document.body.style.backgroundImage = `url(${imageUrl})`;
+                    } else {
+                        document.body.style.backgroundColor = '#f0f8ff';
+                    }
+                });
+        }
+
+        function displayWeather(data) {
+            document.getElementById('weather-info').innerHTML = `
+                <h2>${data.name}, ${data.sys.country}</h2>
+                <img src="http://openweathermap.org/img/wn/${data.weather[0].icon}.png" alt="${data.weather[0].description}">
+                <p>Temperature: ${data.main.temp}°C</p>
+                <p>Weather: ${data.weather[0].description}</p>
+                <p>Humidity: ${data.main.humidity}%</p>
+                <p>Wind Speed: ${data.wind.speed} Kp/H</p>
+            `;
+        }
+
+        document.getElementById('city').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                getWeather();
+            }
+        });
+    </script>
+</body>
+</html>
